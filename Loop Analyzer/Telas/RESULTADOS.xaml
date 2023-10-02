@@ -1,0 +1,13 @@
+﻿<Window x:Class="Loop_Analyzer.Telas.RESULTADOS"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:Loop_Analyzer.Telas"
+        Title="RESULTADOS" Height="450" Width="800">
+    <Grid>
+        <ListView Name="dataGrid" ItemsSource="{Binding}">
+            <ListView.View>
+                <GridView />
+            </ListView.View>
+        </ListView>
+    </Grid>
+</Window>
