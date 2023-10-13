@@ -137,15 +137,16 @@
 
                 <!-- Botões de Executar e Salvar -->
                 <Button Name="btnExecutar" Grid.Column="0" Margin="10" Width="150" Height="50" Content="EXECUTAR" HorizontalAlignment="Right" VerticalAlignment="Center" Click="btnExecutar_Click" />
-                <Button Grid.Column="1" Margin="10" Width="150" Height="50" Content="SALVAR" HorizontalAlignment="Left" VerticalAlignment="Center" />
+                <Button Name="btnConverter" Grid.Column="1" Margin="10" Width="150" Height="50" Content="CONVERTER" HorizontalAlignment="Left" VerticalAlignment="Center" Click="btnConverter_Click" />
 
                 <!-- Grupo de seleção de processo -->
-                <GroupBox Grid.Column="2" Margin="10">
+                <GroupBox x:Name="escolhaProcesso" Grid.Column="2" Margin="10">
                     <GroupBox.Header>Escolha o processo:</GroupBox.Header>
                     <StackPanel>
-                        <RadioButton IsChecked="True">laço For</RadioButton>
-                        <RadioButton>Laço For Paralelo</RadioButton>
-                        <RadioButton>LINQ</RadioButton>
+                        <RadioButton GroupName="opcaoSelecionada" x:Name="lacoFor" IsChecked="True" Content="Laço For"></RadioButton>
+                        <RadioButton GroupName="opcaoSelecionada" x:Name="lacoForParalelo" Content="Laço For Paralelo"></RadioButton>
+                        <RadioButton GroupName="opcaoSelecionada" x:Name="LINQ" Content="LINQ"></RadioButton>
+                        <RadioButton GroupName="opcaoSelecionada" x:Name="While" Content="While"></RadioButton>
                     </StackPanel>
                 </GroupBox>
             </Grid>
