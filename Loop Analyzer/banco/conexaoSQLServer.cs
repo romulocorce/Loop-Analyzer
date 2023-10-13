@@ -4,13 +4,15 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Data.SqlClient;
+using System.Linq;
+using Dapper;
 
 namespace Loop_Analyzer.Banco
 {
-    class ConexaoSQLServer 
+    public class ConexaoSQLServer 
     {
-        private static SqlConnection connOrigemSQLServer = null;
-        private static SqlConnection connDestinoSQLServer = null;
+        public static SqlConnection connOrigemSQLServer = null;
+        public static SqlConnection connDestinoSQLServer = null;
 
         public static StatusRetorno ConectaSqlServer(string strConexao, int origemDestino)
         {
@@ -85,7 +87,6 @@ namespace Loop_Analyzer.Banco
                 return retorno;
             }
         }
-
         public static DbDataReader RodarSql(string sql)
         {
             try
@@ -100,5 +101,20 @@ namespace Loop_Analyzer.Banco
                 throw new Exception(ex.Message);
             }
         }
+
+        public static List<T> RodarSqlBancoOrigem<T>(string sql)
+        {
+            try
+            {
+                var ConOrigem = connOrigemSQLServer;
+                return ConOrigem.Query<T>(sql, commandTimeout: 200000).ToList();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
+
     }
 }
