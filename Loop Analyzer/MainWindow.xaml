@@ -143,9 +143,10 @@
                 <GroupBox x:Name="escolhaProcesso" Grid.Column="2" Margin="10">
                     <GroupBox.Header>Escolha o processo:</GroupBox.Header>
                     <StackPanel>
-                        <RadioButton GroupName="opcaoSelecionada" x:Name="lacoFor" IsChecked="True" Content="laço For"></RadioButton>
+                        <RadioButton GroupName="opcaoSelecionada" x:Name="lacoFor" IsChecked="True" Content="Laço For"></RadioButton>
                         <RadioButton GroupName="opcaoSelecionada" x:Name="lacoForParalelo" Content="Laço For Paralelo"></RadioButton>
                         <RadioButton GroupName="opcaoSelecionada" x:Name="LINQ" Content="LINQ"></RadioButton>
+                        <RadioButton GroupName="opcaoSelecionada" x:Name="While" Content="While"></RadioButton>
                     </StackPanel>
                 </GroupBox>
             </Grid>

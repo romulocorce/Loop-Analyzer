@@ -4,14 +4,12 @@ using Loop_Analyzer.Classes;
 using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
-using System.Diagnostics;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Loop_Analyzer.business
 {
-    internal class ClienteFor
+    internal class ClienteWhile
     {
         private SqlConnection conDestino = ConexaoSQLServer.connDestinoSQLServer;
         private List<ClienteDTO> listaCliente = new List<ClienteDTO>();
@@ -30,7 +28,7 @@ namespace Loop_Analyzer.business
                 listaCliente = await CarregaListaCliente(novoResult, format);
                 using (SqlTransaction transaction = conDestino.BeginTransaction())
                 {
-                    Messenger.Default.Send("Aguarde......Inserindo Dados Destino.");
+                    Messenger.Default.Send("Aguarde... Inserindo Dados Destino.");
                     retorno = ConexaoSQLServer.incluirBulkInsert(conDestino, transaction, listaCliente, "CLIENTE");
                     retorno.TotalMigrado = listaCliente.Count;
                     retorno.TotalRegistro = totalRegistroInicial;
@@ -59,26 +57,12 @@ namespace Loop_Analyzer.business
                 int total = resul.Count();
                 totalRegistroInicial = total;
 
-                Messenger.Default.Send("Aguarde...Analisando Dados via FOR!");
+                Messenger.Default.Send("Aguarde... Analisando Dados via WHILE!");
                 var inicio = DateTime.Now;
                 FuncoesTratarDados ft = new FuncoesTratarDados();
 
-                //await atualizaStatus(total, ft);
-
-
-                using (Process process = Process.GetCurrentProcess())
-                {
-                    double cpuUsage = process.TotalProcessorTime.TotalMilliseconds;                   
-                }
-
-                // Medir o uso de memória
-                using (Process process = Process.GetCurrentProcess())
-                {
-                    long memoryUsage = process.PrivateMemorySize64; 
-                }
-
-
-                for (int i = 0; i < resul.Count; i++)
+                int i = 0;
+                while (i < resul.Count)
                 {
                     var dr = resul[i];
                     var clienteDTO = new ClienteDTO();
@@ -87,7 +71,7 @@ namespace Loop_Analyzer.business
                     clienteDTO.CPF = await ft.ArrumaCnpjCpf(dr.CPF, "CPF");
                     clienteDTO.RG = await ft.AjustaTamanhoStringT(dr.RG, 20);
                     clienteDTO.NOME = await ft.ConverteNome(dr.NOME?.Trim(), dr.SOBRENOME?.Trim(), dr.CODIGOOLD);
-                    clienteDTO.SOBRENOME = await ft.ConverteSobrenome(dr.NOME?.Trim(), dr.SOBRENOME?.Trim());
+                    clienteDTO.SOBRENOME = ft.ConverteSobrenome(dr.NOME?.Trim(), dr.SOBRENOME?.Trim()).Result;
                     clienteDTO.ENDERECO = await ft.LimpaAcento(ft.AjustaTamanhoStringT(dr.ENDERECO, 100).Result);
                     clienteDTO.NUMERO = await ft.AjustaTamanhoStringT(dr.NUMERO, 10);
                     clienteDTO.BAIRRO = await ft.LimpaAcento(ft.AjustaTamanhoStringT(dr.BAIRRO, 100).Result);
@@ -104,6 +88,7 @@ namespace Loop_Analyzer.business
                     clienteDTO.DATULTALT = clienteDTO.DATULTALT.GetValueOrDefault(DateTime.Now);
 
                     listCliente.Add(clienteDTO);
+                    i++;
                 }
 
                 var final = DateTime.Now;
@@ -115,15 +100,6 @@ namespace Loop_Analyzer.business
             {
                 string msg = ex.Message + " \n " + ex.InnerException.Message;
                 throw new ArgumentException("Dado Inválido:", msg);
-            }
-        }
-
-        private async Task atualizaStatus(int numRows, FuncoesTratarDados ft)
-        {
-            while (numRows != ft.RetornaUltimoCodigoSequencial().Result)
-            {
-                Messenger.Default.Send("Aguarde...Analisando Dados via LINQ! \n " + ft.RetornaUltimoCodigoSequencial().Result + "/" + numRows);
-                await Task.Delay(1000);
             }
         }
     }

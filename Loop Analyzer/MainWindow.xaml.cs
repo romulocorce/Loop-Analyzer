@@ -146,30 +146,45 @@ namespace Loop_Analyzer
             StatusRetorno retornoZorro = new StatusRetorno();
 
             if (lacoFor.IsChecked.GetValueOrDefault(false))
-                MessageBox.Show("Opção selecionada: lacoFor");
+                retornoZorro = ConverterCliente("yyyy-MM-dd", 0);
             else if (lacoForParalelo.IsChecked.GetValueOrDefault(false))
-                MessageBox.Show("Opção selecionada: lacoForParalelo");
+                retornoZorro = ConverterCliente("yyyy-MM-dd", 1);
             else if (LINQ.IsChecked.GetValueOrDefault(false))
-                retornoZorro = ConverterCliente("yyyy-MM-dd");
-
-            //MessageBox.Show("Opção selecionada: LINQ");
+                retornoZorro = ConverterCliente("yyyy-MM-dd", 2);
+            else if (While.IsChecked.GetValueOrDefault(false))
+                retornoZorro = ConverterCliente("yyyy-MM-dd", 3);
 
         }
 
-        public StatusRetorno ConverterCliente(string format)
+        public StatusRetorno ConverterCliente(string format, int tipoLaco)
         {
             StatusRetorno retorno = new StatusRetorno();
             try
             {
                 string sql = txtSelect.Text;
 
-
-                ClienteLinq cb = new ClienteLinq();
-                retorno = cb.ConverterCliente(sql, format).Result;
-
+                if (tipoLaco == 0)
+                {
+                    ClienteFor cb = new ClienteFor();
+                    retorno = cb.ConverterCliente(sql, format).Result;
+                }
+                else if (tipoLaco == 1)
+                {
+                    ClienteForParalelo cb = new ClienteForParalelo();
+                    retorno = cb.ConverterCliente(sql, format).Result;
+                }
+                else if (tipoLaco == 2)
+                {
+                    ClienteLinq cb = new ClienteLinq();
+                    retorno = cb.ConverterCliente(sql, format).Result;
+                }
+                else if (tipoLaco == 3)
+                {
+                    ClienteWhile cb = new ClienteWhile();
+                    retorno = cb.ConverterCliente(sql, format).Result;
+                }
 
                 statusConversao(retorno);
-
                 return retorno;
             }
             catch (Exception ex)

@@ -5,8 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Loop_Analyzer.business
@@ -31,7 +29,7 @@ namespace Loop_Analyzer.business
                 using (SqlTransaction transaction = conDestino.BeginTransaction())
                 {
                     Messenger.Default.Send("Aguarde......Inserindo Dados Destino.");
-                    //retorno = SQLGERALREPOSITORY.IncluirBulkInsert(conDestino, transaction, listaCliente, "CLIENTE");
+                    retorno = ConexaoSQLServer.incluirBulkInsert(conDestino, transaction, listaCliente, "CLIENTE");
                     retorno.TotalMigrado = listaCliente.Count;
                     retorno.TotalRegistro = totalRegistroInicial;
                     if (retorno.Status == 1)
