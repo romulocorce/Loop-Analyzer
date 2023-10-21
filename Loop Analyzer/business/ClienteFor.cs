@@ -64,8 +64,7 @@ namespace Loop_Analyzer.business
                 var inicio = DateTime.Now;
                 FuncoesTratarDados ft = new FuncoesTratarDados();
 
-                //await atualizaStatus(total, ft);
-                              
+                //await atualizaStatus(total, ft);                             
 
 
                 for (int i = 0; i < resul.Count; i++)
@@ -93,8 +92,8 @@ namespace Loop_Analyzer.business
                     clienteDTO.DATULTALT = await ft.ValidaERetornaData(dr.DATULTALT, format);
                     clienteDTO.DATULTALT = clienteDTO.DATULTALT.GetValueOrDefault(DateTime.Now);
 
-                    processamentoDTO.memoryUsage = process.PrivateMemorySize64;
-                    processamentoDTO.cpuUsage = process.TotalProcessorTime.TotalMilliseconds;
+                    //processamentoDTO.memoryUsage = process.PrivateMemorySize64;
+                    //processamentoDTO.cpuUsage = process.TotalProcessorTime.TotalMilliseconds;
 
 
                     listCliente.Add(clienteDTO);
