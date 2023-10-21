@@ -2,7 +2,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace Loop_Analyzer.business
@@ -10,55 +9,12 @@ namespace Loop_Analyzer.business
     public class FuncoesTratarDados
     {
         private int _codSequencia = 0;
-        public FuncoesTratarDados(int valorInicioContador)
-        {
-            _codSequencia = valorInicioContador;
-        }
+       
         public FuncoesTratarDados()
         {
             _codSequencia = 0;
         }
         CultureInfo provider = new CultureInfo("pt-BR");
-        public async Task<int> ValidarCodigoEGerarSequencial(int? valor)
-        {
-            try
-            {
-                int retorno = valor.GetValueOrDefault(0);
-                if (valor == null)
-                {
-                    _codSequencia = _codSequencia + 1;
-                    return _codSequencia;
-                }
-                else
-                {
-                    return retorno;
-                }
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
-        }
-        public async Task<int> ValidarCodigoEGerarSequencialMaxima(int valor)
-        {
-            try
-            {
-                if (valor > _codSequencia)
-                {
-                    _codSequencia = valor + 1;
-                    return _codSequencia;
-                }
-                else
-                {
-                    _codSequencia = _codSequencia + 1;
-                    return _codSequencia;
-                }
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
-        }
 
         public async Task<int> RetornaUltimoCodigoSequencial()
         {
@@ -70,70 +26,7 @@ namespace Loop_Analyzer.business
             {
                 throw ex;
             }
-        }
-        public async Task<int?> ConverterInt(string valor, string campo, int? valorDefault = null)
-        {
-            try
-            {
-                if (string.IsNullOrEmpty(valor))
-                {
-                    if (valorDefault is null)
-                    {
-                        return null;
-                    }
-                    else
-                        return valorDefault;
-                }
-                else
-                {
-                    if (!int.TryParse(valor.ToString().Trim(), out int retorno))
-                        throw new FormatException("Campo " + campo + " (int): " + valor.ToString().Trim());
-                    return retorno;
-                }
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
-        }
-
-        public async Task<decimal?> ConverterDecimal(string valor, string campo)
-        {
-            try
-            {
-                if (string.IsNullOrEmpty(valor))
-                {
-                    return 0;
-                }
-                else
-                {
-                    if (!decimal.TryParse(valor.ToString().Trim(), out decimal retorno))
-                        throw new FormatException("Campo " + campo + " (decimal): " + valor.ToString().Trim());
-                    return retorno;
-                }
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
-        }
-
-        public async Task<string> ValidaCampoObrigatorio(string valor, string campo)
-        {
-            try
-            {
-                if (string.IsNullOrEmpty(valor))
-                {
-                    throw new FormatException("Campo " + campo + " OBRIGATÓRIO. ");
-                }
-
-                return valor;
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
-        }
+        }   
 
         public async Task<DateTime?> ValidaERetornaData(string dataString, string format)
         {
@@ -166,14 +59,6 @@ namespace Loop_Analyzer.business
             }
         }
 
-        public async Task<bool> ValidaNullVazio(string valor)
-        {
-            if (string.IsNullOrEmpty(valor))
-                return true;
-            else
-                return false;
-        }
-
         public async Task<string> AjustaTamanhoStringT(string text, int tamanho, string retornoDafalut = "")
         {
             try
@@ -188,48 +73,6 @@ namespace Loop_Analyzer.business
             {
                 return "";
             }
-        }
-
-        public string Maiusculo(string text)
-        {
-            if (!string.IsNullOrEmpty(text))
-            {
-                return text.ToUpper().Trim();
-            }
-            return "";
-        }
-        public async Task<string> removeCaracterT(string text)
-        {
-            try
-            {
-                if (!String.IsNullOrEmpty(text))
-                {
-                    string pattern = @"(?i)[^0-9a-záéíóúàèìòùâêîôûãõçÁÉÍÓÚÀÈÌÒÙÂÊÎÔÛÃÕÇ\s\.|\/|\\|\||\-]";
-                    string replacement = "";
-                    Regex rgx = new Regex(pattern);
-                    text = rgx.Replace(text, replacement);
-                    return text;
-                }
-                else
-                {
-                    return "";
-                }
-
-            }
-            catch (Exception ex)
-            {
-                throw new Exception(ex.Message);
-            }
-
-        }
-        public string removeCaracter(string text)
-        {
-            //string pattern = @"(?i)[^0-9a-záéíóúàèìòùâêîôûãõçÁÉÍÓÚÀÈÌÒÙÂÊÎÔÛÃÕÇ\s]";
-            string pattern = @"(?i)[^0-9a-záéíóúàèìòùâêîôûãõçÁÉÍÓÚÀÈÌÒÙÂÊÎÔÛÃÕÇ\s\.|\/|\\|\||\-]";
-            string replacement = "";
-            Regex rgx = new Regex(pattern);
-            text = rgx.Replace(text, replacement);
-            return text;
         }
 
         public async Task<string> SomenteNumeros(string Texto)
@@ -330,11 +173,6 @@ namespace Loop_Analyzer.business
             }
         }
 
-        public async Task<string> StringReplace(string txt, string oldStr, string newStr)
-        {
-            return txt.Replace(oldStr, newStr);
-        }
-
         public async Task<string> ConverteNome(string nome, string sobrenome, string codigoold)
         {
             try
@@ -360,6 +198,7 @@ namespace Loop_Analyzer.business
                 throw new ArgumentException("Dado Invalido:", msg);
             }
         }
+
         public async Task<string> ConverteSobrenome(string nome, string sobrenome)
         {
             try
@@ -386,22 +225,7 @@ namespace Loop_Analyzer.business
             }
 
         }
-        public async Task<string> RetornaEstadoCivil(string estadoCivil)
-        {
 
-            if ((estadoCivil != "AMASIADO") && (estadoCivil != "CASADO") && (estadoCivil != "DESQUITADO") && (estadoCivil != "SOLTEIRO") && (estadoCivil != "VIUVO"))
-                return "SOLTEIRO";
-            else
-                return estadoCivil;
-        }
-        public async Task<int?> validaCasaPropria(int? casaPropria)
-        {
-            if ((casaPropria != 1) && (casaPropria != 2) && (casaPropria != 3) && (casaPropria != 4) && (casaPropria != 5))
-                casaPropria = null;
-
-            return casaPropria;
-
-        }
         public async Task<string> validaEmail(string email)
         {
             if (!string.IsNullOrEmpty(email))
@@ -422,31 +246,6 @@ namespace Loop_Analyzer.business
                 sexo = 0;
             }
             return sexo;
-        }
-
-        public async Task<int?> ValidaVerdadeiroUse(int? verdadeiro)
-        {
-            if (verdadeiro != 1)
-            {
-                verdadeiro = 2;
-            }
-            return verdadeiro;
-        }
-        public async Task<int?> ValidaEnviaCobranca(int? verdadeiro)
-        {
-            if (verdadeiro != 2)
-            {
-                verdadeiro = 1;
-            }
-            return verdadeiro;
-        }
-        public async Task<int?> ValidaTipoCliRef(int? tipoRef)
-        {
-            if ((tipoRef != 0) && (tipoRef != 1) && (tipoRef != 2))
-
-                tipoRef = null;
-
-            return tipoRef;
         }
     }
 }

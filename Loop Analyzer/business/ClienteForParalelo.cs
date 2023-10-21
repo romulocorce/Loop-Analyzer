@@ -68,7 +68,6 @@ namespace Loop_Analyzer.business
                 {
                     var clienteDTO = new ClienteDTO();
 
-                    clienteDTO.CODIGO = ft.ValidarCodigoEGerarSequencial(dr.CODIGO).Result;
                     clienteDTO.CPF = ft.ArrumaCnpjCpf(dr.CPF, "CPF").Result;
                     clienteDTO.RG = ft.AjustaTamanhoStringT(dr.RG, 20).Result;
                     clienteDTO.NOME = ft.ConverteNome(dr.NOME?.Trim(), dr.SOBRENOME?.Trim(), dr.CODIGOOLD).Result;

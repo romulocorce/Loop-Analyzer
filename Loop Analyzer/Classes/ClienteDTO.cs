@@ -2,7 +2,6 @@
 {
     public class ClienteDTO
     {
-        public int CODIGO { get; set; }
         public string NOME { get; set; }
         public string SOBRENOME { get; set; }
         public string ENDERECO { get; set; }

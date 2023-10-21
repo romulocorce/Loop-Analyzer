@@ -53,7 +53,8 @@ namespace Loop_Analyzer.business
         private async Task<List<ClienteDTO>> CarregaListaCliente(List<SqlClienteDTO> resul, string format = "yyyy-MM-dd")
         {
             List<ClienteDTO> listCliente = new List<ClienteDTO>();
-
+            List<ProcessamentoDTO> ListaProcesso = new List<ProcessamentoDTO>();
+            Process process = new Process();
             try
             {
                 int total = resul.Count();
@@ -64,26 +65,15 @@ namespace Loop_Analyzer.business
                 FuncoesTratarDados ft = new FuncoesTratarDados();
 
                 //await atualizaStatus(total, ft);
-
-
-                using (Process process = Process.GetCurrentProcess())
-                {
-                    double cpuUsage = process.TotalProcessorTime.TotalMilliseconds;                   
-                }
-
-                // Medir o uso de memória
-                using (Process process = Process.GetCurrentProcess())
-                {
-                    long memoryUsage = process.PrivateMemorySize64; 
-                }
+                              
 
 
                 for (int i = 0; i < resul.Count; i++)
                 {
                     var dr = resul[i];
                     var clienteDTO = new ClienteDTO();
+                    var processamentoDTO = new ProcessamentoDTO();
 
-                    clienteDTO.CODIGO = await ft.ValidarCodigoEGerarSequencial(dr.CODIGO);
                     clienteDTO.CPF = await ft.ArrumaCnpjCpf(dr.CPF, "CPF");
                     clienteDTO.RG = await ft.AjustaTamanhoStringT(dr.RG, 20);
                     clienteDTO.NOME = await ft.ConverteNome(dr.NOME?.Trim(), dr.SOBRENOME?.Trim(), dr.CODIGOOLD);
@@ -103,7 +93,12 @@ namespace Loop_Analyzer.business
                     clienteDTO.DATULTALT = await ft.ValidaERetornaData(dr.DATULTALT, format);
                     clienteDTO.DATULTALT = clienteDTO.DATULTALT.GetValueOrDefault(DateTime.Now);
 
+                    processamentoDTO.memoryUsage = process.PrivateMemorySize64;
+                    processamentoDTO.cpuUsage = process.TotalProcessorTime.TotalMilliseconds;
+
+
                     listCliente.Add(clienteDTO);
+                    ListaProcesso.Add(processamentoDTO);
                 }
 
                 var final = DateTime.Now;

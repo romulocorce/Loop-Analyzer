@@ -65,7 +65,6 @@ namespace Loop_Analyzer.business
 
                 listCliente = resul.Select(dr => new ClienteDTO
                 {
-                    CODIGO = ft.ValidarCodigoEGerarSequencial(dr.CODIGO).Result,
                     CPF = ft.ArrumaCnpjCpf(dr.CPF, "CPF").Result,
                     RG = ft.AjustaTamanhoStringT(dr.RG, 20).Result,
                     NOME = ft.ConverteNome(dr.NOME?.Trim(), dr.SOBRENOME?.Trim(), dr.CODIGOOLD).Result,

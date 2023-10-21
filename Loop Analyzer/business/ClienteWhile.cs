@@ -66,8 +66,7 @@ namespace Loop_Analyzer.business
                 {
                     var dr = resul[i];
                     var clienteDTO = new ClienteDTO();
-
-                    clienteDTO.CODIGO = await ft.ValidarCodigoEGerarSequencial(dr.CODIGO);
+                    
                     clienteDTO.CPF = await ft.ArrumaCnpjCpf(dr.CPF, "CPF");
                     clienteDTO.RG = await ft.AjustaTamanhoStringT(dr.RG, 20);
                     clienteDTO.NOME = await ft.ConverteNome(dr.NOME?.Trim(), dr.SOBRENOME?.Trim(), dr.CODIGOOLD);
