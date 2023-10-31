@@ -166,7 +166,7 @@ namespace Loop_Analyzer
                 if (tipoLaco == 0)
                 {
                     ClienteFor cb = new ClienteFor();
-                    retorno = cb.ConverterCliente(sql, format).Result;
+                    retorno = cb.ConverterCliente(sql, format, tipoLaco).Result;
                 }
                 else if (tipoLaco == 1)
                 {
