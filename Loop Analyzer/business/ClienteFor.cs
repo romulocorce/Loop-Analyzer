@@ -2,7 +2,6 @@
 using Loop_Analyzer.Banco;
 using Loop_Analyzer.business;
 using Loop_Analyzer.Classes;
-using Loop_Analyzer;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Diagnostics;
@@ -22,10 +21,10 @@ internal class ClienteFor
 
         try
         {
-            Messenger.Default.Send("Aguarde...Carregando.");
-
+            //CRIAR UMA CONEXAO COM O BANCO DESTINO
             var novoResult = ConexaoSQLServer.RodarSqlBancoOrigem<SqlClienteDTO>(sql);
 
+            //STARTAR AS TAREFAS DE FORMA ASSINCRONA
             Task task1 = GetSystemMemoryInfo(tipolaco);
             Task task2 = CarregaListaCliente(novoResult, format);
 
@@ -33,12 +32,19 @@ internal class ClienteFor
 
             using (SqlTransaction transaction = conDestino.BeginTransaction())
             {
-                retorno = ConexaoSQLServer.incluirBulkInsert(conDestino, transaction, dados, "DADOS");
+                retorno = ConexaoSQLServer.incluirBulkInsert(conDestino, transaction, dados, "DADOS"); //INSERINDO OS DADOS
 
                 if (retorno.Status == 1)
+                {
                     transaction.Commit();
+                    dados.Clear(); //LIMPAR A LISTA PARA QUE NAO INTERFIRA NA PROXIMA METRICA
+                }
                 else
+                {
                     transaction.Rollback();
+                    dados.Clear();
+                }
+
             }
 
             return retorno;
@@ -63,15 +69,30 @@ internal class ClienteFor
                 var dr = resul[i];
                 var clienteDTO = new ClienteDTO();
 
-                clienteDTO.CPF = await ft.ArrumaCnpjCpf(dr.CPF, "CPF").ConfigureAwait(false);
-                clienteDTO.RG = await ft.AjustaTamanhoStringT(dr.RG, 20).ConfigureAwait(false);
-                // ... (Restante do código)
+                clienteDTO.CPF = await ft.ArrumaCnpjCpf(dr.CPF, "CPF");
+                clienteDTO.RG = await ft.AjustaTamanhoStringT(dr.RG, 20);
+                clienteDTO.NOME = await ft.ConverteNome(dr.NOME?.Trim(), dr.SOBRENOME?.Trim(), dr.CODIGOOLD);
+                clienteDTO.SOBRENOME = ft.ConverteSobrenome(dr.NOME?.Trim(), dr.SOBRENOME?.Trim()).Result;
+                clienteDTO.ENDERECO = await ft.LimpaAcento(ft.AjustaTamanhoStringT(dr.ENDERECO, 100).Result);
+                clienteDTO.NUMERO = await ft.AjustaTamanhoStringT(dr.NUMERO, 10);
+                clienteDTO.BAIRRO = await ft.LimpaAcento(ft.AjustaTamanhoStringT(dr.BAIRRO, 100).Result);
+                clienteDTO.CEP = await ft.ArrumaCEP(dr.CEP);
+                clienteDTO.CIDADE = await ft.LimpaAcento(ft.AjustaTamanhoStringT(dr.CIDADE, 100).Result);
+                clienteDTO.ESTADO = await ft.AjustaTamanhoStringT(dr.ESTADO, 2);
+                clienteDTO.COMPLEMENTO = await ft.AjustaTamanhoStringT(dr.COMPLEMENTO, 50);
+                clienteDTO.TIPOPESSOA = ft.ArrumaCnpjCpf(dr.CPF, "CPF").Result.Length <= 14 ? 2 : 1;
+                clienteDTO.TELEFONE1 = await ft.AjustaTamanhoStringT(ft.SomenteNumeros(dr.TELEFONE1).Result, 20);
+                clienteDTO.NASCIMENTO = await ft.ValidaERetornaData(dr.NASCIMENTO, format);
+                clienteDTO.SEXO = await ft.validaSexo(dr.SEXO);
+                clienteDTO.EMAIL = await ft.validaEmail(ft.AjustaTamanhoStringT(dr.EMAIL, 50).Result);
+                clienteDTO.DATULTALT = await ft.ValidaERetornaData(dr.DATULTALT, format);
+                clienteDTO.DATULTALT = clienteDTO.DATULTALT.GetValueOrDefault(DateTime.Now);
 
                 listCliente.Add(clienteDTO);
             }
 
-            cancellationTokenSource.Cancel(); // Cancelar a execução do loop em GetSystemMemoryInfo
-
+            cancellationTokenSource.Cancel(); // CANCELA A EXECUÇÃO DO LOOP EM GetSystemMemoryInfo
+            listCliente.Clear();             //LIMPAR A LISTA PARA QUE NAO INTERFIRA NA PROXIMA METRICA
         }
         catch (Exception ex)
         {
@@ -91,11 +112,11 @@ internal class ClienteFor
             {
                 RecursosDTO re = new RecursosDTO();
 
-                re.PROCESSADOR = cpuCounter.NextValue();
-                re.MEMORIA = memCounter.NextValue();
+                re.PROCESSADOR = cpuCounter.NextValue(); //COLETA O USO DE CPU NAQUELE EXATO MOMENTO
+                re.MEMORIA = memCounter.NextValue();    //COLETA O USO DE MEMORIA NAQUELE EXATO MOMENTO
                 re.TIPOLACO = tipolaco;
                 dados.Add(re);
-                await Task.Delay(300).ConfigureAwait(false);               
+                await Task.Delay(300).ConfigureAwait(false); //NESCESSARIO UMA DELEY PARA GERAR UM CONSUMO, SENAO VEM TUDO 0
             }
         }
         catch (Exception ex)
