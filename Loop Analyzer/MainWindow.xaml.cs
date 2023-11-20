@@ -2,13 +2,9 @@
 using Loop_Analyzer.Banco;
 using Loop_Analyzer.business;
 using Loop_Analyzer.Telas;
-using Microsoft.SqlServer.Server;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.DirectoryServices.ActiveDirectory;
 using System.Windows;
-using System.Windows.Controls;
 
 namespace Loop_Analyzer
 {
