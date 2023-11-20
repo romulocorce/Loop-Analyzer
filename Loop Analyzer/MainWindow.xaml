@@ -37,13 +37,13 @@
                             </Grid.ColumnDefinitions>
 
                             <Label Name="lblIpOrigem" Grid.Row="0" Grid.Column="0" HorizontalAlignment="Right" VerticalAlignment="Center">IP:</Label>
-                            <TextBox Name="txtIpOrigem" Grid.Row="0" Grid.Column="1" BorderBrush="Black" Height="25" Width="200" HorizontalAlignment="Left" />
+                            <TextBox Name="txtIpOrigem" Grid.Row="0" Grid.Column="1" BorderBrush="Black" Height="25" Width="200" HorizontalAlignment="Left">localhost\LOOPANALYZER</TextBox>
 
                             <Label  Name="lblUserOrigem" Grid.Row="1" Grid.Column="0" HorizontalAlignment="Right" VerticalAlignment="Center">USER:</Label>
-                            <TextBox Name="txtuserOrigem" Grid.Row="1" Grid.Column="1" BorderBrush="Black" Height="25" Width="200" HorizontalAlignment="Left" Margin="0,0,0,1" />
+                            <TextBox Name="txtuserOrigem" Grid.Row="1" Grid.Column="1" BorderBrush="Black" Height="25" Width="200" HorizontalAlignment="Left" Margin="0,0,0,1">SA</TextBox>
 
                             <Label Name="lblSenhaOrigem" Grid.Row="2" Grid.Column="0" HorizontalAlignment="Right" VerticalAlignment="Center">SENHA:</Label>
-                            <PasswordBox Name="pwdSenhaOrigem" Grid.Row="2" Grid.Column="1" BorderBrush="Black" Height="25" Width="200" HorizontalAlignment="Left" />
+                            <PasswordBox Name="pwdSenhaOrigem" Grid.Row="2" Grid.Column="1" BorderBrush="Black" Height="25" Width="200" HorizontalAlignment="Left" Password="C3po@r2d2@sw1990"/>
                         </Grid>
 
                         <!-- Botão de Conectar na origem -->
@@ -86,13 +86,13 @@
                             </Grid.ColumnDefinitions>
 
                             <Label x:Name="lblIpDestino" Grid.Row="0" Grid.Column="0" HorizontalAlignment="Right" VerticalAlignment="Center">IP:</Label>
-                            <TextBox x:Name="txtIpDestino" Grid.Row="0" Grid.Column="1" BorderBrush="Black" Height="25" Width="200" HorizontalAlignment="Left" />
+                            <TextBox x:Name="txtIpDestino" Grid.Row="0" Grid.Column="1" BorderBrush="Black" Height="25" Width="200" HorizontalAlignment="Left">localhost\LOOPANALYZER</TextBox>
 
                             <Label  Name="lblUserDestino" Grid.Row="1" Grid.Column="0" HorizontalAlignment="Right" VerticalAlignment="Center">USER:</Label>
-                            <TextBox x:Name="txtUserDestino" Grid.Row="1" Grid.Column="1" BorderBrush="Black" Height="25" Width="200" HorizontalAlignment="Left" Margin="0,0,0,1" />
+                            <TextBox x:Name="txtUserDestino" Grid.Row="1" Grid.Column="1" BorderBrush="Black" Height="25" Width="200" HorizontalAlignment="Left" Margin="0,0,0,1">SA</TextBox>
 
                             <Label Name="lblSenhaDestino" Grid.Row="2" Grid.Column="0" HorizontalAlignment="Right" VerticalAlignment="Center">SENHA:</Label>
-                            <PasswordBox  Name="pwdSenhaDestino" Grid.Row="2" Grid.Column="1" BorderBrush="Black" Height="25" Width="200" HorizontalAlignment="Left" />
+                            <PasswordBox  Name="pwdSenhaDestino" Grid.Row="2" Grid.Column="1" BorderBrush="Black" Height="25" Width="200" HorizontalAlignment="Left" Password="C3po@r2d2@sw1990"/>
                         </Grid>
 
                         <!-- Botão de Conectar Destino-->
@@ -125,7 +125,7 @@
             <Label Grid.Row="0">Coloque o SQL abaixo:</Label>
 
             <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
-                <TextBox x:Name="txtSelect" Margin="10" BorderBrush="Black" AcceptsReturn="True" />
+                <TextBox x:Name="txtSelect" Margin="10" BorderBrush="Black" AcceptsReturn="True"></TextBox>
             </ScrollViewer>
 
             <Grid Grid.Row="2">

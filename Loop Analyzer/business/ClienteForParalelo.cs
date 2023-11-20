@@ -4,8 +4,10 @@ using Loop_Analyzer.Classes;
 using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Loop_Analyzer.business
@@ -13,10 +15,10 @@ namespace Loop_Analyzer.business
     internal class ClienteForParalelo
     {
         private SqlConnection conDestino = ConexaoSQLServer.connDestinoSQLServer;
-        private List<ClienteDTO> listaCliente = new List<ClienteDTO>();
-        private int totalRegistroInicial = 0;
+        private List<RecursosDTO> dados = new List<RecursosDTO>();
+        private CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
 
-        public async Task<StatusRetorno> ConverterCliente(string sql, string format)
+        public async Task<StatusRetorno> ConverterCliente(string sql, string format, int tipolaco)
         {
             var retorno = new StatusRetorno { Status = 0 };
 
@@ -26,13 +28,15 @@ namespace Loop_Analyzer.business
 
                 var novoResult = ConexaoSQLServer.RodarSqlBancoOrigem<SqlClienteDTO>(sql);
 
-                listaCliente = await CarregaListaClienteParalelo(novoResult, format);
+                Task task1 = GetSystemMemoryInfo(tipolaco);
+                Task task2 = CarregaListaClienteParalelo(novoResult, format);
+
+                await Task.WhenAll(task1, task2).ConfigureAwait(false);
+
                 using (SqlTransaction transaction = conDestino.BeginTransaction())
                 {
-                    Messenger.Default.Send("Aguarde......Inserindo Dados Destino.");
-                    retorno = ConexaoSQLServer.incluirBulkInsert(conDestino, transaction, listaCliente, "CLIENTE");
-                    retorno.TotalMigrado = listaCliente.Count;
-                    retorno.TotalRegistro = totalRegistroInicial;
+                    retorno = ConexaoSQLServer.incluirBulkInsert(conDestino, transaction, dados, "DADOS");
+
                     if (retorno.Status == 1)
                         transaction.Commit();
                     else
@@ -49,17 +53,12 @@ namespace Loop_Analyzer.business
             }
         }
 
-        private async Task<List<ClienteDTO>> CarregaListaClienteParalelo(List<SqlClienteDTO> resul, string format = "yyyy-MM-dd")
+        private async Task CarregaListaClienteParalelo(List<SqlClienteDTO> resul, string format = "yyyy-MM-dd")
         {
-            List<ClienteDTO> listCliente = new List<ClienteDTO>();
-
             try
             {
-                int total = resul.Count();
-                totalRegistroInicial = total;
-
-                Messenger.Default.Send("Aguarde...Analisando Dados via FOR (Paralelo)!");
                 var inicio = DateTime.Now;
+                List<ClienteDTO> listCliente = new List<ClienteDTO>();
                 FuncoesTratarDados ft = new FuncoesTratarDados();
 
                 var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }; // Define o número de threads paralelas
@@ -89,14 +88,39 @@ namespace Loop_Analyzer.business
                     listCliente.Add(clienteDTO);
                 });
 
+                cancellationTokenSource.Cancel();
                 var final = DateTime.Now;
                 var tempo = final - inicio;
 
-                return listCliente;
             }
             catch (Exception ex)
             {
                 string msg = ex.Message + " \n " + ex.InnerException.Message;
+                throw new ArgumentException("Dado Inválido:", msg);
+            }
+        }
+
+        public async Task GetSystemMemoryInfo(int tipolaco)
+        {
+            try
+            {
+                PerformanceCounter cpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
+                PerformanceCounter memCounter = new PerformanceCounter("Memory", "Available MBytes");
+
+                while (!cancellationTokenSource.Token.IsCancellationRequested)
+                {
+                    RecursosDTO re = new RecursosDTO();
+
+                    re.PROCESSADOR = cpuCounter.NextValue();
+                    re.MEMORIA = memCounter.NextValue();
+                    re.TIPOLACO = tipolaco;
+                    dados.Add(re);
+                    await Task.Delay(300).ConfigureAwait(false);
+                }
+            }
+            catch (Exception ex)
+            {
+                string msg = ex.Message + " \n " + ex.InnerException?.Message;
                 throw new ArgumentException("Dado Inválido:", msg);
             }
         }
