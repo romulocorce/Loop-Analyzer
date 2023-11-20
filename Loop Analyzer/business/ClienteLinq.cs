@@ -4,7 +4,9 @@ using Loop_Analyzer.Classes;
 using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
+using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Loop_Analyzer.business
@@ -12,10 +14,10 @@ namespace Loop_Analyzer.business
     internal class ClienteLinq
     {
         private SqlConnection conDestino = ConexaoSQLServer.connDestinoSQLServer;
-        private List<ClienteDTO> listaCliente = new List<ClienteDTO>();
-        private int totalRegistroInicial = 0;
+        private List<RecursosDTO> dados = new List<RecursosDTO>();
+        private CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
 
-        public async Task<StatusRetorno> ConverterCliente(string sql, string format)
+        public async Task<StatusRetorno> ConverterCliente(string sql, string format, int tipolaco)
         {
             var retorno = new StatusRetorno { Status = 0 };
 
@@ -25,13 +27,15 @@ namespace Loop_Analyzer.business
 
                 var novoResult = ConexaoSQLServer.RodarSqlBancoOrigem<SqlClienteDTO>(sql);
 
-                listaCliente = await CarregaListaCliente(novoResult, format);
+                Task task1 = GetSystemMemoryInfo(tipolaco);
+                Task task2 = CarregaListaCliente(novoResult, format);
+
+                await Task.WhenAll(task1, task2).ConfigureAwait(false);
+
                 using (SqlTransaction transaction = conDestino.BeginTransaction())
                 {
-                    Messenger.Default.Send("Aguarde......Inserindo Dados Destino.");
-                    retorno = ConexaoSQLServer.incluirBulkInsert(conDestino, transaction, listaCliente, "CLIENTE");
-                    retorno.TotalMigrado = listaCliente.Count;
-                    retorno.TotalRegistro = totalRegistroInicial;
+                    retorno = ConexaoSQLServer.incluirBulkInsert(conDestino, transaction, dados, "DADOS");
+
                     if (retorno.Status == 1)
                         transaction.Commit();
                     else
@@ -48,18 +52,13 @@ namespace Loop_Analyzer.business
             }
         }
 
-        private async Task<List<ClienteDTO>> CarregaListaCliente(List<SqlClienteDTO> resul, string format = "yyyy-MM-dd")
+        private async Task CarregaListaCliente(List<SqlClienteDTO> resul, string format = "yyyy-MM-dd")
         {
-            List<ClienteDTO> listCliente = new List<ClienteDTO>();
-
             try
             {
-                int total = resul.Count();
-                totalRegistroInicial = total;
-
-                Messenger.Default.Send("Aguarde...Analisando Dados via LINQ!");
                 var inicio = DateTime.Now;
                 FuncoesTratarDados ft = new FuncoesTratarDados();
+                List<ClienteDTO> listCliente = new List<ClienteDTO>();
 
                 //await atualizaStatus(total, ft);
 
@@ -84,10 +83,9 @@ namespace Loop_Analyzer.business
                     DATULTALT = ft.ValidaERetornaData(dr.DATULTALT, format).Result.GetValueOrDefault(DateTime.Now)
                 }).ToList();
 
+                cancellationTokenSource.Cancel();
                 var final = DateTime.Now;
                 var tempo = final - inicio;
-
-                return listCliente;
             }
             catch (Exception ex)
             {
@@ -95,13 +93,28 @@ namespace Loop_Analyzer.business
                 throw new ArgumentException("Dado Inválido:", msg);
             }
         }
-
-        private async Task atualizaStatus(int numRows, FuncoesTratarDados ft)
+        public async Task GetSystemMemoryInfo(int tipolaco)
         {
-            while (numRows != ft.RetornaUltimoCodigoSequencial().Result)
+            try
             {
-                Messenger.Default.Send("Aguarde...Analisando Dados via LINQ! \n " + ft.RetornaUltimoCodigoSequencial().Result + "/" + numRows);
-                await Task.Delay(1000);
+                PerformanceCounter cpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
+                PerformanceCounter memCounter = new PerformanceCounter("Memory", "Available MBytes");
+
+                while (!cancellationTokenSource.Token.IsCancellationRequested)
+                {
+                    RecursosDTO re = new RecursosDTO();
+
+                    re.PROCESSADOR = cpuCounter.NextValue();
+                    re.MEMORIA = memCounter.NextValue();
+                    re.TIPOLACO = tipolaco;
+                    dados.Add(re);
+                    await Task.Delay(300).ConfigureAwait(false);
+                }
+            }
+            catch (Exception ex)
+            {
+                string msg = ex.Message + " \n " + ex.InnerException?.Message;
+                throw new ArgumentException("Dado Inválido:", msg);
             }
         }
     }
