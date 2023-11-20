@@ -177,7 +177,7 @@ namespace Loop_Analyzer
                 else if (tipoLaco == 3)
                 {
                     ClienteWhile cb = new ClienteWhile();
-                    retorno = cb.ConverterCliente(sql, format).Result;
+                    retorno = cb.ConverterCliente(sql, format, tipoLaco).Result;
                 }
 
                 statusConversao(retorno);

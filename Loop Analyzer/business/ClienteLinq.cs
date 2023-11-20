@@ -23,8 +23,6 @@ namespace Loop_Analyzer.business
 
             try
             {
-                Messenger.Default.Send("Aguarde...Carregando.");
-
                 var novoResult = ConexaoSQLServer.RodarSqlBancoOrigem<SqlClienteDTO>(sql);
 
                 Task task1 = GetSystemMemoryInfo(tipolaco);
@@ -37,9 +35,15 @@ namespace Loop_Analyzer.business
                     retorno = ConexaoSQLServer.incluirBulkInsert(conDestino, transaction, dados, "DADOS");
 
                     if (retorno.Status == 1)
+                    {
                         transaction.Commit();
+                        dados.Clear();
+                    }
                     else
+                    {
                         transaction.Rollback();
+                        dados.Clear();
+                    }
                 }
 
                 return retorno;
@@ -56,11 +60,8 @@ namespace Loop_Analyzer.business
         {
             try
             {
-                var inicio = DateTime.Now;
                 FuncoesTratarDados ft = new FuncoesTratarDados();
                 List<ClienteDTO> listCliente = new List<ClienteDTO>();
-
-                //await atualizaStatus(total, ft);
 
                 listCliente = resul.Select(dr => new ClienteDTO
                 {
@@ -84,8 +85,7 @@ namespace Loop_Analyzer.business
                 }).ToList();
 
                 cancellationTokenSource.Cancel();
-                var final = DateTime.Now;
-                var tempo = final - inicio;
+                listCliente.Clear();
             }
             catch (Exception ex)
             {
