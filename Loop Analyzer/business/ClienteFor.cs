@@ -167,8 +167,9 @@ namespace Loop_Analyzer.business
                     re.NUMEROREPETICAO = repeticao;
                     re.VM = vm;
                     dados.Add(re);
-                    await Task.Delay(300).ConfigureAwait(false); //NESCESSARIO UMA DELEY PARA GERAR UM CONSUMO, SENAO VEM TUDO 0
+                    await Task.Delay(500).ConfigureAwait(false); //NESCESSARIO UMA DELEY PARA GERAR UM CONSUMO, SENAO VEM TUDO 0
                 }
+                dados.RemoveAt(0);
             }
             catch (Exception ex)
             {

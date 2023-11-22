@@ -166,8 +166,9 @@ namespace Loop_Analyzer.business
                     re.NUMEROREPETICAO = repeticao;
                     re.VM = vm;
                     dados.Add(re);
-                    await Task.Delay(300).ConfigureAwait(false);
+                    await Task.Delay(500).ConfigureAwait(false);
                 }
+                dados.RemoveAt(0);
             }
             catch (Exception ex)
             {
