@@ -15,8 +15,9 @@ namespace Loop_Analyzer.business
         private SqlConnection conDestino = ConexaoSQLServer.connDestinoSQLServer;
         private List<RecursosDTO> dados = new List<RecursosDTO>();
         private CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+        private int volumeDados = 0;
 
-        public async Task<StatusRetorno> ConverterCliente(string sql, string format, int tipolaco)
+        public async Task<StatusRetorno> ConverterCliente(string sql, string format, int tipolaco, string vm, int repeticao)
         {
             var retorno = new StatusRetorno { Status = 0 };
 
@@ -24,7 +25,7 @@ namespace Loop_Analyzer.business
             {
                 var novoResult = ConexaoSQLServer.RodarSqlBancoOrigem<SqlClienteDTO>(sql);
 
-                Task task1 = GetSystemMemoryInfo(tipolaco);
+                Task task1 = GetSystemMemoryInfo(tipolaco, vm, repeticao);
                 Task task2 = CarregaListaCliente(novoResult, format);
 
                 await Task.WhenAll(task1, task2).ConfigureAwait(false);
@@ -60,6 +61,7 @@ namespace Loop_Analyzer.business
             {
                 List<ClienteDTO> listCliente = new List<ClienteDTO>();
                 FuncoesTratarDados ft = new FuncoesTratarDados();
+                volumeDados = resul.Count;
 
                 int i = 0;
                 while (i < resul.Count)
@@ -98,7 +100,7 @@ namespace Loop_Analyzer.business
                 throw new ArgumentException("Dado Inválido:", msg);
             }
         }
-        public async Task GetSystemMemoryInfo(int tipolaco)
+        public async Task GetSystemMemoryInfo(int tipolaco, string vm, int repeticao)
         {
             try
             {
@@ -109,9 +111,12 @@ namespace Loop_Analyzer.business
                 {
                     RecursosDTO re = new RecursosDTO();
 
-                    re.PROCESSADOR = cpuCounter.NextValue();
-                    re.MEMORIA = memCounter.NextValue();
+                    re.PROCESSADOR = cpuCounter.NextValue(); //COLETA O USO DE CPU NAQUELE EXATO MOMENTO
+                    re.MEMORIA = memCounter.NextValue();    //COLETA O USO DE MEMORIA NAQUELE EXATO MOMENTO
                     re.TIPOLACO = tipolaco;
+                    re.VOLUMEDADOS = volumeDados;
+                    re.NUMEROREPETICAO = repeticao;
+                    re.VM = vm;
                     dados.Add(re);
                     await Task.Delay(300).ConfigureAwait(false);
                 }

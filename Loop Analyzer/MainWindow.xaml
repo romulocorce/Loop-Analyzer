@@ -140,12 +140,26 @@
                 <Button Name="btnExecutar" Grid.Column="0" Margin="10" Width="150" Height="50" Content="Validar SQL" HorizontalAlignment="Right" VerticalAlignment="Center" Click="btnExecutar_Click" />
                 <Button Name="btnConverter" Grid.Column="1" Margin="10" Width="150" Height="50" Content="CONVERTER" HorizontalAlignment="Left" VerticalAlignment="Center" Click="btnConverter_Click" />
 
-                <GroupBox x:Name="escolhaRepeticao" Grid.Column="2" Margin="10">
-                    <GroupBox.Header>Escolha a quantidade de repetições:</GroupBox.Header>
-                    <StackPanel>
-                        <TextBox x:Name="txtQuantidadeProcesso" BorderBrush="Black" Height="25" Margin="10" Width="50" HorizontalAlignment="Center" VerticalAlignment="Center">0</TextBox>
-                    </StackPanel>
-                </GroupBox>
+                <Grid Grid.Column="2">
+                    <Grid.RowDefinitions>
+                        <RowDefinition/>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
+                    <GroupBox x:Name="escolhaRepeticao" Margin="10" Grid.Row="0">
+                        <GroupBox.Header>Escolha a quantidade de repetições:</GroupBox.Header>
+                        <StackPanel>
+                            <TextBox x:Name="txtQuantidadeProcesso" BorderBrush="Black" Height="25" Margin="10" Width="50" HorizontalAlignment="Center" VerticalAlignment="Center">0</TextBox>
+                        </StackPanel>
+                    </GroupBox>
+                    
+                    <GroupBox x:Name="nomeVM" Margin="10" Grid.Row="1">
+                        <GroupBox.Header>Digite o nome da maquina:</GroupBox.Header>
+                        <StackPanel>
+                            <TextBox x:Name="txtNomeVM" BorderBrush="Black" Height="25" Margin="10" Width="150" HorizontalAlignment="Center" VerticalAlignment="Center"></TextBox>
+                        </StackPanel>
+                    </GroupBox>
+                </Grid>
+                
 
 
                 <!-- Grupo de seleção de processo -->
