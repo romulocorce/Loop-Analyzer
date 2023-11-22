@@ -4,7 +4,9 @@ using Loop_Analyzer.business;
 using Loop_Analyzer.Telas;
 using System;
 using System.Collections.Generic;
+using System.Net.Mail;
 using System.Windows;
+using System.Windows.Controls.Primitives;
 
 namespace Loop_Analyzer
 {
@@ -18,6 +20,35 @@ namespace Loop_Analyzer
         public MainWindow()
         {
             InitializeComponent();
+
+            txtSelect.Text =
+"SELECT"
++ Environment.NewLine + "P.FirstName AS NOME,"
++ Environment.NewLine + "P.LastName AS SOBRENOME,"
++ Environment.NewLine + "A.AddressLine1 AS ENDERECO,"
++ Environment.NewLine + "'' AS NUMERO,"
++ Environment.NewLine + "'' AS BAIRRO,"
++ Environment.NewLine + "A.City AS CIDADE,"
++ Environment.NewLine + "PRO.Name AS ESTADO,"
++ Environment.NewLine + "'' AS CEP,"
++ Environment.NewLine + "'' AS TELEFONE1,"
++ Environment.NewLine + "'' AS NASCIMENTO,"
++ Environment.NewLine + "'' AS RG,"
++ Environment.NewLine + "'' AS CPF,"
++ Environment.NewLine + "NULL AS SEXO,"
++ Environment.NewLine + "'' AS CADASTRO,"
++ Environment.NewLine + "'' AS OBSERVACAO,"
++ Environment.NewLine + "'' AS COMPLEMENTO,"
++ Environment.NewLine + "EM.EmailAddress AS EMAIL,"
++ Environment.NewLine + "'' AS DATULTALT,"
++ Environment.NewLine + "P.BusinessEntityID AS CODIGOOLD"
++ Environment.NewLine + "--SELECT*"
++ Environment.NewLine + "FROM PERSON.Person P"
++ Environment.NewLine + "LEFT JOIN Person.BusinessEntityAddress E ON E.BusinessEntityID = P.BusinessEntityID"
++ Environment.NewLine + "LEFT JOIN Person.Address A ON A.AddressID = E.AddressID"
++ Environment.NewLine + "LEFT JOIN Person.AddressType T ON T.AddressTypeID = E.AddressTypeID"
++ Environment.NewLine + "LEFT JOIN Person.EmailAddress EM ON EM.BusinessEntityID = P.BusinessEntityID"
++ Environment.NewLine + "cross JOIN Person.StateProvince PRO";
         }
 
         private void btnConectarOrigem_Click(object sender, RoutedEventArgs e)
@@ -137,22 +168,36 @@ namespace Loop_Analyzer
 
         private void btnConverter_Click(object sender, RoutedEventArgs e)
         {
-            hInicio = DateTime.Now;
+            try
+            {
+                StatusRetorno retornoZorro = new StatusRetorno();
+                int quantidadeProcesso = int.Parse(txtQuantidadeProcesso.Text);
 
-            StatusRetorno retornoZorro = new StatusRetorno();
-
-            if (lacoFor.IsChecked.GetValueOrDefault(false))
-                retornoZorro = ConverterCliente("yyyy-MM-dd", 0);
-            else if (lacoForParalelo.IsChecked.GetValueOrDefault(false))
-                retornoZorro = ConverterCliente("yyyy-MM-dd", 1);
-            else if (LINQ.IsChecked.GetValueOrDefault(false))
-                retornoZorro = ConverterCliente("yyyy-MM-dd", 2);
-            else if (While.IsChecked.GetValueOrDefault(false))
-                retornoZorro = ConverterCliente("yyyy-MM-dd", 3);
-
+                if (quantidadeProcesso > 0)
+                {
+                    for (int i = 0; i < quantidadeProcesso; i++)
+                    {
+                        if (lacoFor.IsChecked.GetValueOrDefault(false))
+                            retornoZorro = ConverterCliente("yyyy-MM-dd", 0, txtNomeVM.Text, i + 1);
+                        else if (lacoForParalelo.IsChecked.GetValueOrDefault(false))
+                            retornoZorro = ConverterCliente("yyyy-MM-dd", 1, txtNomeVM.Text, i + 1);
+                        else if (LINQ.IsChecked.GetValueOrDefault(false))
+                            retornoZorro = ConverterCliente("yyyy-MM-dd", 2, txtNomeVM.Text, i + 1);
+                        else if (While.IsChecked.GetValueOrDefault(false))
+                            retornoZorro = ConverterCliente("yyyy-MM-dd", 3, txtNomeVM.Text, i + 1);
+                    }
+                    MessageBox.Show($"Processo finalizado", "Atenção", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                else
+                    MessageBox.Show("Valor digitado precisa ser maior que zero.", "Erro", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Erro para converte o valor {ex.Message}", "Erro", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
-        public StatusRetorno ConverterCliente(string format, int tipoLaco)
+        public StatusRetorno ConverterCliente(string format, int tipoLaco, string vm, int repeticao)
         {
             StatusRetorno retorno = new StatusRetorno();
             try
@@ -162,25 +207,24 @@ namespace Loop_Analyzer
                 if (tipoLaco == 0)
                 {
                     ClienteFor cb = new ClienteFor();
-                    retorno = cb.ConverterCliente(sql, format, tipoLaco).Result;
+                    retorno = cb.ConverterCliente(sql, format, tipoLaco, vm, repeticao).Result;
                 }
                 else if (tipoLaco == 1)
                 {
                     ClienteForParalelo cb = new ClienteForParalelo();
-                    retorno = cb.ConverterCliente(sql, format, tipoLaco).Result;
+                    retorno = cb.ConverterCliente(sql, format, tipoLaco, vm, repeticao).Result;
                 }
                 else if (tipoLaco == 2)
                 {
                     ClienteLinq cb = new ClienteLinq();
-                    retorno = cb.ConverterCliente(sql, format, tipoLaco).Result;
+                    retorno = cb.ConverterCliente(sql, format, tipoLaco, vm, repeticao).Result;
                 }
                 else if (tipoLaco == 3)
                 {
                     ClienteWhile cb = new ClienteWhile();
-                    retorno = cb.ConverterCliente(sql, format, tipoLaco).Result;
+                    retorno = cb.ConverterCliente(sql, format, tipoLaco, vm, repeticao).Result;
                 }
 
-                statusConversao(retorno);
                 return retorno;
             }
             catch (Exception ex)
@@ -189,22 +233,6 @@ namespace Loop_Analyzer
                 retorno.Status = 0;
                 return retorno;
             }
-
-        }
-
-        private void statusConversao(StatusRetorno retorno)
-        {
-            hFim = DateTime.Now;
-            TimeSpan date = Convert.ToDateTime(hFim) - Convert.ToDateTime(hInicio);
-
-            MessageBox.Show(retorno.Mensagem, "Hora de Inicio: " + Convert.ToString(hInicio)
-                + "\n Hora de Termino: " + Convert.ToString(hFim)
-                + "\n Tempo Total de Execussão = " + Convert.ToString(date),
-                MessageBoxButton.OK, MessageBoxImage.Exclamation);
-
-            if (retorno.Status != 1)
-                MessageBox.Show(retorno.Mensagem, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-
         }
     }
 }

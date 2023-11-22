@@ -14,8 +14,9 @@ internal class ClienteFor
     private SqlConnection conDestino = ConexaoSQLServer.connDestinoSQLServer;
     private List<RecursosDTO> dados = new List<RecursosDTO>();
     private CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+    private int volumeDados = 0;
 
-    public async Task<StatusRetorno> ConverterCliente(string sql, string format, int tipolaco)
+    public async Task<StatusRetorno> ConverterCliente(string sql, string format, int tipolaco, string vm, int repeticao)
     {
         var retorno = new StatusRetorno { Status = 0 };
 
@@ -25,7 +26,7 @@ internal class ClienteFor
             var novoResult = ConexaoSQLServer.RodarSqlBancoOrigem<SqlClienteDTO>(sql);
 
             //STARTAR AS TAREFAS DE FORMA ASSINCRONA
-            Task task1 = GetSystemMemoryInfo(tipolaco);
+            Task task1 = GetSystemMemoryInfo(tipolaco, vm, repeticao);
             Task task2 = CarregaListaCliente(novoResult, format);
 
             await Task.WhenAll(task1, task2).ConfigureAwait(false);
@@ -63,6 +64,7 @@ internal class ClienteFor
         {
             var listCliente = new List<ClienteDTO>();
             FuncoesTratarDados ft = new FuncoesTratarDados();
+            volumeDados = resul.Count;
 
             for (int i = 0; i < resul.Count; i++)
             {
@@ -101,7 +103,7 @@ internal class ClienteFor
         }
     }
 
-    public async Task GetSystemMemoryInfo(int tipolaco)
+    public async Task GetSystemMemoryInfo(int tipolaco, string vm, int repeticao)
     {
         try
         {
@@ -115,6 +117,9 @@ internal class ClienteFor
                 re.PROCESSADOR = cpuCounter.NextValue(); //COLETA O USO DE CPU NAQUELE EXATO MOMENTO
                 re.MEMORIA = memCounter.NextValue();    //COLETA O USO DE MEMORIA NAQUELE EXATO MOMENTO
                 re.TIPOLACO = tipolaco;
+                re.VOLUMEDADOS = volumeDados;
+                re.NUMEROREPETICAO = repeticao;
+                re.VM = vm;
                 dados.Add(re);
                 await Task.Delay(300).ConfigureAwait(false); //NESCESSARIO UMA DELEY PARA GERAR UM CONSUMO, SENAO VEM TUDO 0
             }
