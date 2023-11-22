@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -16,6 +17,7 @@ namespace Loop_Analyzer.business
         private List<RecursosDTO> dados = new List<RecursosDTO>();
         private CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
         private int volumeDados = 0;
+        TimeSpan tempoDecorrido;
 
         public async Task<StatusRetorno> ConverterCliente(string sql, string format, int tipolaco, string vm, int repeticao)
         {
@@ -23,26 +25,67 @@ namespace Loop_Analyzer.business
 
             try
             {
+                //CRIAR UMA CONEXAO COM O BANCO DESTINO
                 var novoResult = ConexaoSQLServer.RodarSqlBancoOrigem<SqlClienteDTO>(sql);
 
+                volumeDados = novoResult.Count();
+
+                //STARTAR AS TAREFAS DE FORMA ASSINCRONA
                 Task task1 = GetSystemMemoryInfo(tipolaco, vm, repeticao);
-                Task task2 = CarregaListaClienteParalelo(novoResult, format);
+                Task task2 = CarregaListaCliente(novoResult, format);
 
                 await Task.WhenAll(task1, task2).ConfigureAwait(false);
 
+                var listaProcessos = new List<ProcessamentoDTO>();
+
                 using (SqlTransaction transaction = conDestino.BeginTransaction())
                 {
-                    retorno = ConexaoSQLServer.incluirBulkInsert(conDestino, transaction, dados, "DADOS");
+                    try
+                    {
+                        // Criar a lista de processos dentro do bloco try
+                        var processos = new ProcessamentoDTO
+                        {
+                            USOMEDIOCPU = dados.Average(w => w.PROCESSADOR),
+                            MEDIAMEMORIADISPONIVEL = dados.Average(w => w.MEMORIADISPONIVEL),
+                            TEMPO = tempoDecorrido,
+                            VOLUMEDADOS = volumeDados,
+                            TIPOLACO = tipolaco,
+                            NUMEROREPETICAO = repeticao,
+                            VM = vm
+                        };
+                        listaProcessos.Add(processos);
 
-                    if (retorno.Status == 1)
-                    {
+                        // Incluir dados na primeira tabela
+                        retorno = ConexaoSQLServer.incluirBulkInsert(conDestino, transaction, dados, "DADOS");
+
+                        if (retorno.Status != 1)
+                        {
+                            throw new Exception("Erro ao inserir dados na DADOS");
+                        }
+
+                        // Incluir dados na segunda tabela
+                        retorno = ConexaoSQLServer.incluirBulkInsert(conDestino, transaction, listaProcessos, "PROCESSOS");
+
+                        if (retorno.Status != 1)
+                        {
+                            throw new Exception("Erro ao inserir dados na PROCESSOS");
+                        }
+
+                        // Se chegou até aqui sem exceções, commita a transação
                         transaction.Commit();
-                        dados.Clear();
                     }
-                    else
+                    catch (Exception ex)
                     {
+                        // Em caso de erro, realiza o rollback da transação
                         transaction.Rollback();
+                        Console.WriteLine("Erro: " + ex.Message);
+                    }
+                    finally
+                    {
+                        // Limpar as listas após o commit ou rollback
                         dados.Clear();
+                        listaProcessos.Clear();
+                        //novoResult.Clear();
                     }
                 }
 
@@ -56,16 +99,18 @@ namespace Loop_Analyzer.business
             }
         }
 
-        private async Task CarregaListaClienteParalelo(List<SqlClienteDTO> resul, string format = "yyyy-MM-dd")
+        private async Task CarregaListaCliente(List<SqlClienteDTO> resul, string format = "yyyy-MM-dd")
         {
             try
             {
                 List<ClienteDTO> listCliente = new List<ClienteDTO>();
                 FuncoesTratarDados ft = new FuncoesTratarDados();
-                volumeDados = resul.Count;
+                Stopwatch stopwatch = new Stopwatch();
+
+               
 
                 var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }; // Define o número de threads paralelas
-
+                stopwatch.Start();
                 Parallel.ForEach(resul, parallelOptions, dr =>
                 {
                     var clienteDTO = new ClienteDTO();
@@ -90,9 +135,11 @@ namespace Loop_Analyzer.business
 
                     listCliente.Add(clienteDTO);
                 });
+                stopwatch.Stop();
 
                 cancellationTokenSource.Cancel();
                 listCliente.Clear();
+                tempoDecorrido = stopwatch.Elapsed;
             }
             catch (Exception ex)
             {
@@ -113,7 +160,7 @@ namespace Loop_Analyzer.business
                     RecursosDTO re = new RecursosDTO();
 
                     re.PROCESSADOR = cpuCounter.NextValue(); //COLETA O USO DE CPU NAQUELE EXATO MOMENTO
-                    re.MEMORIA = memCounter.NextValue();    //COLETA O USO DE MEMORIA NAQUELE EXATO MOMENTO
+                    re.MEMORIADISPONIVEL = memCounter.NextValue();    //COLETA O USO DE MEMORIA NAQUELE EXATO MOMENTO
                     re.TIPOLACO = tipolaco;
                     re.VOLUMEDADOS = volumeDados;
                     re.NUMEROREPETICAO = repeticao;
