@@ -113,7 +113,7 @@ namespace Loop_Analyzer.business
                     RecursosDTO re = new RecursosDTO();
 
                     re.PROCESSADOR = cpuCounter.NextValue(); //COLETA O USO DE CPU NAQUELE EXATO MOMENTO
-                    re.MEMORIA = memCounter.NextValue();    //COLETA O USO DE MEMORIA NAQUELE EXATO MOMENTO
+                    re.MEMORIADISPONIVEL = memCounter.NextValue();    //COLETA O USO DE MEMORIA NAQUELE EXATO MOMENTO
                     re.TIPOLACO = tipolaco;
                     re.VOLUMEDADOS = volumeDados;
                     re.NUMEROREPETICAO = repeticao;

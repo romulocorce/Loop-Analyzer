@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Threading;
 using System;
+using System.Linq;
 
 internal class ClienteFor
 {
@@ -15,6 +16,7 @@ internal class ClienteFor
     private List<RecursosDTO> dados = new List<RecursosDTO>();
     private CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
     private int volumeDados = 0;
+    TimeSpan tempoDecorrido;
 
     public async Task<StatusRetorno> ConverterCliente(string sql, string format, int tipolaco, string vm, int repeticao)
     {
@@ -25,27 +27,65 @@ internal class ClienteFor
             //CRIAR UMA CONEXAO COM O BANCO DESTINO
             var novoResult = ConexaoSQLServer.RodarSqlBancoOrigem<SqlClienteDTO>(sql);
 
+            volumeDados = novoResult.Count();
+
             //STARTAR AS TAREFAS DE FORMA ASSINCRONA
             Task task1 = GetSystemMemoryInfo(tipolaco, vm, repeticao);
             Task task2 = CarregaListaCliente(novoResult, format);
 
             await Task.WhenAll(task1, task2).ConfigureAwait(false);
 
+            var listaProcessos = new List<ProcessamentoDTO>();
+
             using (SqlTransaction transaction = conDestino.BeginTransaction())
             {
-                retorno = ConexaoSQLServer.incluirBulkInsert(conDestino, transaction, dados, "DADOS"); //INSERINDO OS DADOS
-
-                if (retorno.Status == 1)
+                try
                 {
+                    // Criar a lista de processos dentro do bloco try
+                    var processos = new ProcessamentoDTO
+                    {
+                        USOMEDIOCPU = dados.Average(w => w.PROCESSADOR),
+                        MEDIAMEMORIADISPONIVEL = dados.Average(w => w.MEMORIADISPONIVEL),
+                        TEMPO = tempoDecorrido,
+                        VOLUMEDADOS = volumeDados,
+                        TIPOLACO = tipolaco,
+                        NUMEROREPETICAO = repeticao,
+                        VM = vm
+                    };
+                    listaProcessos.Add(processos);
+
+                    // Incluir dados na primeira tabela
+                    retorno = ConexaoSQLServer.incluirBulkInsert(conDestino, transaction, dados, "DADOS");
+
+                    if (retorno.Status != 1)
+                    {
+                        throw new Exception("Erro ao inserir dados na DADOS");
+                    }
+
+                    // Incluir dados na segunda tabela
+                    retorno = ConexaoSQLServer.incluirBulkInsert(conDestino, transaction, listaProcessos, "PROCESSOS");
+
+                    if (retorno.Status != 1)
+                    {
+                        throw new Exception("Erro ao inserir dados na PROCESSOS");
+                    }
+
+                    // Se chegou até aqui sem exceções, commita a transação
                     transaction.Commit();
-                    dados.Clear(); //LIMPAR A LISTA PARA QUE NAO INTERFIRA NA PROXIMA METRICA
                 }
-                else
+                catch (Exception ex)
                 {
+                    // Em caso de erro, realiza o rollback da transação
                     transaction.Rollback();
-                    dados.Clear();
+                    Console.WriteLine("Erro: " + ex.Message);
                 }
-
+                finally
+                {
+                    // Limpar as listas após o commit ou rollback
+                    dados.Clear();
+                    listaProcessos.Clear();
+                    //novoResult.Clear();
+                }
             }
 
             return retorno;
@@ -64,8 +104,9 @@ internal class ClienteFor
         {
             var listCliente = new List<ClienteDTO>();
             FuncoesTratarDados ft = new FuncoesTratarDados();
-            volumeDados = resul.Count;
+            Stopwatch stopwatch = new Stopwatch();
 
+            stopwatch.Start();
             for (int i = 0; i < resul.Count; i++)
             {
                 var dr = resul[i];
@@ -92,9 +133,11 @@ internal class ClienteFor
 
                 listCliente.Add(clienteDTO);
             }
+            stopwatch.Stop();
 
             cancellationTokenSource.Cancel(); // CANCELA A EXECUÇÃO DO LOOP EM GetSystemMemoryInfo
             listCliente.Clear();             //LIMPAR A LISTA PARA QUE NAO INTERFIRA NA PROXIMA METRICA
+            tempoDecorrido = stopwatch.Elapsed;
         }
         catch (Exception ex)
         {
@@ -115,7 +158,7 @@ internal class ClienteFor
                 RecursosDTO re = new RecursosDTO();
 
                 re.PROCESSADOR = cpuCounter.NextValue(); //COLETA O USO DE CPU NAQUELE EXATO MOMENTO
-                re.MEMORIA = memCounter.NextValue();    //COLETA O USO DE MEMORIA NAQUELE EXATO MOMENTO
+                re.MEMORIADISPONIVEL = memCounter.NextValue();    //COLETA O USO DE MEMORIA NAQUELE EXATO MOMENTO
                 re.TIPOLACO = tipolaco;
                 re.VOLUMEDADOS = volumeDados;
                 re.NUMEROREPETICAO = repeticao;
