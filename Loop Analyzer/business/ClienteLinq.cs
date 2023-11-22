@@ -17,6 +17,7 @@ namespace Loop_Analyzer.business
         private List<RecursosDTO> dados = new List<RecursosDTO>();
         private CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
         private int volumeDados = 0;
+        TimeSpan tempoDecorrido;
 
         public async Task<StatusRetorno> ConverterCliente(string sql, string format, int tipolaco, string vm, int repeticao)
         {
@@ -24,26 +25,67 @@ namespace Loop_Analyzer.business
 
             try
             {
+                //CRIAR UMA CONEXAO COM O BANCO DESTINO
                 var novoResult = ConexaoSQLServer.RodarSqlBancoOrigem<SqlClienteDTO>(sql);
 
+                volumeDados = novoResult.Count();
+
+                //STARTAR AS TAREFAS DE FORMA ASSINCRONA
                 Task task1 = GetSystemMemoryInfo(tipolaco, vm, repeticao);
                 Task task2 = CarregaListaCliente(novoResult, format);
 
                 await Task.WhenAll(task1, task2).ConfigureAwait(false);
 
+                var listaProcessos = new List<ProcessamentoDTO>();
+
                 using (SqlTransaction transaction = conDestino.BeginTransaction())
                 {
-                    retorno = ConexaoSQLServer.incluirBulkInsert(conDestino, transaction, dados, "DADOS");
+                    try
+                    {
+                        // Criar a lista de processos dentro do bloco try
+                        var processos = new ProcessamentoDTO
+                        {
+                            USOMEDIOCPU = dados.Average(w => w.PROCESSADOR),
+                            MEDIAMEMORIADISPONIVEL = dados.Average(w => w.MEMORIADISPONIVEL),
+                            TEMPO = tempoDecorrido,
+                            VOLUMEDADOS = volumeDados,
+                            TIPOLACO = tipolaco,
+                            NUMEROREPETICAO = repeticao,
+                            VM = vm
+                        };
+                        listaProcessos.Add(processos);
 
-                    if (retorno.Status == 1)
-                    {
+                        // Incluir dados na primeira tabela
+                        retorno = ConexaoSQLServer.incluirBulkInsert(conDestino, transaction, dados, "DADOS");
+
+                        if (retorno.Status != 1)
+                        {
+                            throw new Exception("Erro ao inserir dados na DADOS");
+                        }
+
+                        // Incluir dados na segunda tabela
+                        retorno = ConexaoSQLServer.incluirBulkInsert(conDestino, transaction, listaProcessos, "PROCESSOS");
+
+                        if (retorno.Status != 1)
+                        {
+                            throw new Exception("Erro ao inserir dados na PROCESSOS");
+                        }
+
+                        // Se chegou até aqui sem exceções, commita a transação
                         transaction.Commit();
-                        dados.Clear();
                     }
-                    else
+                    catch (Exception ex)
                     {
+                        // Em caso de erro, realiza o rollback da transação
                         transaction.Rollback();
+                        Console.WriteLine("Erro: " + ex.Message);
+                    }
+                    finally
+                    {
+                        // Limpar as listas após o commit ou rollback
                         dados.Clear();
+                        listaProcessos.Clear();
+                        //novoResult.Clear();
                     }
                 }
 
@@ -63,8 +105,9 @@ namespace Loop_Analyzer.business
             {
                 FuncoesTratarDados ft = new FuncoesTratarDados();
                 List<ClienteDTO> listCliente = new List<ClienteDTO>();
-                volumeDados = resul.Count;
+                Stopwatch stopwatch = new Stopwatch();
 
+                stopwatch.Start();
                 listCliente = resul.Select(dr => new ClienteDTO
                 {
                     CPF = ft.ArrumaCnpjCpf(dr.CPF, "CPF").Result,
@@ -85,9 +128,11 @@ namespace Loop_Analyzer.business
                     EMAIL = ft.validaEmail(ft.AjustaTamanhoStringT(dr.EMAIL, 50).Result).Result,
                     DATULTALT = ft.ValidaERetornaData(dr.DATULTALT, format).Result.GetValueOrDefault(DateTime.Now)
                 }).ToList();
+                stopwatch.Stop();
 
                 cancellationTokenSource.Cancel();
                 listCliente.Clear();
+                tempoDecorrido = stopwatch.Elapsed;
             }
             catch (Exception ex)
             {
